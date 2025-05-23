@@ -13,7 +13,6 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
 import { useAuth } from "@/components/auth-provider"
 import { Github } from "lucide-react"
-import { useToast } from "@/components/ui/use-toast"
 
 // Password strength checker
 const checkPasswordStrength = (password: string) => {
@@ -59,7 +58,6 @@ const checkPasswordStrength = (password: string) => {
 export default function LoginPage() {
   const router = useRouter()
   const { login, register } = useAuth()
-  const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
 
@@ -120,14 +118,8 @@ export default function LoginPage() {
         localStorage.removeItem("rememberedEmail")
       }
       router.push("/")
-    } catch (error: any) {
-      const errorMessage = error.message || "Invalid email or password"
-      setErrors({ ...errors, login: errorMessage })
-      toast({
-        title: "Login failed",
-        description: errorMessage,
-        variant: "destructive",
-      })
+    } catch (error) {
+      setErrors({ ...errors, login: "Invalid email or password" })
     } finally {
       setIsLoading(false)
     }
@@ -156,19 +148,9 @@ export default function LoginPage() {
 
     try {
       await register(registerData.name, registerData.email, registerData.password)
-      toast({
-        title: "Registration successful",
-        description: "Please check your email to verify your account.",
-      })
-      router.push("/auth/verify-email")
-    } catch (error: any) {
-      const errorMessage = error.message || "Registration failed"
-      setErrors({ ...errors, register: errorMessage })
-      toast({
-        title: "Registration failed",
-        description: errorMessage,
-        variant: "destructive",
-      })
+      router.push("/")
+    } catch (error) {
+      setErrors({ ...errors, register: "Registration failed" })
     } finally {
       setIsLoading(false)
     }
