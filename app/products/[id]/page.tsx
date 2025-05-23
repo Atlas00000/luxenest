@@ -5,7 +5,7 @@ import Image from "next/image"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { ChevronLeft, ChevronRight, Heart, Minus, Plus, Share2, ShoppingBag, Star, Truck } from "lucide-react"
+import { ChevronLeft, ChevronRight, Heart, Minus, Plus, Share2, ShoppingBag, Star, Truck, Facebook, Twitter, Linkedin, MessageSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -14,7 +14,35 @@ import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { products } from "@/lib/data"
 import { useCart } from "@/lib/cart"
+import { useWishlist } from "@/lib/wishlist"
+import { useToast } from "@/components/ui/use-toast"
 import { cn } from "@/lib/utils"
+
+// Mock reviews data - replace with actual data from your backend
+const mockReviews = [
+  {
+    id: "1",
+    productId: "prod-1",
+    userId: "user-1",
+    userName: "John Doe",
+    rating: 5,
+    title: "Excellent quality!",
+    comment: "The product exceeded my expectations. The quality is outstanding and it looks even better in person.",
+    date: "2024-03-15",
+    helpful: 12
+  },
+  {
+    id: "2",
+    productId: "prod-1",
+    userId: "user-2",
+    userName: "Jane Smith",
+    rating: 4,
+    title: "Great product with minor issues",
+    comment: "Overall very satisfied with the purchase. The only reason for 4 stars is the slightly longer shipping time.",
+    date: "2024-03-10",
+    helpful: 8
+  }
+]
 
 export default function ProductPage({ params }: { params: { id: string } }) {
   const product = products.find((p) => p.id === params.id)
@@ -24,10 +52,18 @@ export default function ProductPage({ params }: { params: { id: string } }) {
   }
 
   const { addItem } = useCart()
+  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist()
+  const { toast } = useToast()
   const [quantity, setQuantity] = useState(1)
   const [selectedColor, setSelectedColor] = useState(product.colors?.[0] || "")
   const [selectedSize, setSelectedSize] = useState(product.sizes?.[0] || "")
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [showShareMenu, setShowShareMenu] = useState(false)
+
+  // Get related products (same category, excluding current product)
+  const relatedProducts = products
+    .filter(p => p.category === product.category && p.id !== product.id)
+    .slice(0, 4)
 
   const incrementQuantity = () => {
     setQuantity((prev) => Math.min(prev + 1, 10))
@@ -39,6 +75,40 @@ export default function ProductPage({ params }: { params: { id: string } }) {
 
   const handleAddToCart = () => {
     addItem(product, quantity)
+  }
+
+  const toggleWishlist = () => {
+    if (isInWishlist(product.id)) {
+      removeFromWishlist(product.id)
+      toast({
+        title: "Removed from wishlist",
+        description: `${product.name} has been removed from your wishlist.`,
+      })
+    } else {
+      addToWishlist(product)
+      toast({
+        title: "Added to wishlist",
+        description: `${product.name} has been added to your wishlist.`,
+      })
+    }
+  }
+
+  const handleShare = (platform: string) => {
+    const url = window.location.href
+    const text = `Check out this amazing ${product.name} on LuxeNest!`
+    
+    switch (platform) {
+      case 'facebook':
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank')
+        break
+      case 'twitter':
+        window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank')
+        break
+      case 'linkedin':
+        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank')
+        break
+    }
+    setShowShareMenu(false)
   }
 
   const nextImage = () => {
@@ -87,14 +157,56 @@ export default function ProductPage({ params }: { params: { id: string } }) {
             )}
             {product.new && <Badge className="absolute top-4 left-4">New Arrival</Badge>}
 
-            <Button
-              variant="outline"
-              size="icon"
-              className="absolute top-4 right-4 bg-background/80 backdrop-blur-sm"
-              onClick={() => {}}
-            >
-              <Heart className="h-5 w-5" />
-            </Button>
+            <div className="absolute top-4 right-4 flex gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                className="bg-background/80 backdrop-blur-sm"
+                onClick={toggleWishlist}
+              >
+                <Heart className={`h-5 w-5 ${isInWishlist(product.id) ? "fill-current" : ""}`} />
+              </Button>
+              <div className="relative">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="bg-background/80 backdrop-blur-sm"
+                  onClick={() => setShowShareMenu(!showShareMenu)}
+                >
+                  <Share2 className="h-5 w-5" />
+                </Button>
+                {showShareMenu && (
+                  <div className="absolute right-0 top-full mt-2 w-48 rounded-md border bg-background shadow-lg">
+                    <div className="p-2 space-y-1">
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start"
+                        onClick={() => handleShare('facebook')}
+                      >
+                        <Facebook className="h-4 w-4 mr-2" />
+                        Facebook
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start"
+                        onClick={() => handleShare('twitter')}
+                      >
+                        <Twitter className="h-4 w-4 mr-2" />
+                        Twitter
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start"
+                        onClick={() => handleShare('linkedin')}
+                      >
+                        <Linkedin className="h-4 w-4 mr-2" />
+                        LinkedIn
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
 
             <div className="absolute inset-x-0 bottom-4 flex justify-center gap-2">
               {product.images.map((_, index) => (
@@ -254,70 +366,31 @@ export default function ProductPage({ params }: { params: { id: string } }) {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" className="flex-1" onClick={handleAddToCart}>
-                <ShoppingBag className="h-5 w-5 mr-2" />
-                Add to Cart
-              </Button>
+            <Button className="w-full" size="lg" onClick={handleAddToCart}>
+              <ShoppingBag className="mr-2 h-5 w-5" />
+              Add to Cart
+            </Button>
 
-              <Button variant="outline" size="lg" className="flex-1">
-                <Heart className="h-5 w-5 mr-2" />
-                Add to Wishlist
-              </Button>
-            </div>
-
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Truck className="h-4 w-4" />
-              <span>Free shipping on orders over $100</span>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" className="h-8 gap-1">
-                <Share2 className="h-4 w-4" />
-                Share
-              </Button>
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <div className="flex items-center">
+                <Truck className="h-4 w-4 mr-2" />
+                Free shipping
+              </div>
+              <Separator orientation="vertical" className="h-4" />
+              <div>30-day returns</div>
             </div>
           </div>
         </div>
       </div>
 
+      {/* Product Tabs */}
       <div className="mt-16">
-        <Tabs defaultValue="description">
-          <TabsList className="w-full justify-start border-b rounded-none h-auto p-0">
-            <TabsTrigger
-              value="description"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary py-3"
-            >
-              Description
-            </TabsTrigger>
-            <TabsTrigger
-              value="details"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary py-3"
-            >
-              Details
-            </TabsTrigger>
-            <TabsTrigger
-              value="reviews"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary py-3"
-            >
-              Reviews ({product.reviews})
-            </TabsTrigger>
+        <Tabs defaultValue="details" className="space-y-8">
+          <TabsList>
+            <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="reviews">Reviews ({mockReviews.length})</TabsTrigger>
+            <TabsTrigger value="related">Related Products</TabsTrigger>
           </TabsList>
-
-          <TabsContent value="description" className="pt-6">
-            <div className="prose max-w-none dark:prose-invert">
-              <p>{product.description}</p>
-              <p>
-                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed euismod, nisl vel ultricies lacinia, nisl
-                nisl aliquam nisl, eget aliquam nisl nisl sit amet nisl. Sed euismod, nisl vel ultricies lacinia, nisl
-                nisl aliquam nisl, eget aliquam nisl nisl sit amet nisl.
-              </p>
-              <p>
-                Sed euismod, nisl vel ultricies lacinia, nisl nisl aliquam nisl, eget aliquam nisl nisl sit amet nisl.
-                Sed euismod, nisl vel ultricies lacinia, nisl nisl aliquam nisl, eget aliquam nisl nisl sit amet nisl.
-              </p>
-            </div>
-          </TabsContent>
 
           <TabsContent value="details" className="pt-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -344,38 +417,21 @@ export default function ProductPage({ params }: { params: { id: string } }) {
                   </li>
                 </ul>
               </div>
-
               <div>
                 <h3 className="text-lg font-medium mb-4">Shipping & Returns</h3>
-                <ul className="space-y-4">
-                  <li className="flex gap-3">
-                    <Truck className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                <ul className="space-y-2">
+                  <li className="flex items-start gap-2">
+                    <Truck className="h-5 w-5 text-primary mt-0.5" />
                     <div>
-                      <p className="font-medium">Free Standard Shipping</p>
-                      <p className="text-sm text-muted-foreground">On orders over $100</p>
+                      <span className="font-medium">Free Shipping</span>
+                      <p className="text-sm text-muted-foreground">On all orders over $100</p>
                     </div>
                   </li>
-                  <li className="flex gap-3">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="text-primary shrink-0 mt-0.5"
-                    >
-                      <path d="M9 14 4 9l5-5" />
-                      <path d="M4 9h16" />
-                      <path d="M15 4v6" />
-                      <path d="M15 10a5 5 0 0 1 5 5v6" />
-                    </svg>
+                  <li className="flex items-start gap-2">
+                    <MessageSquare className="h-5 w-5 text-primary mt-0.5" />
                     <div>
-                      <p className="font-medium">30-Day Returns</p>
-                      <p className="text-sm text-muted-foreground">Shop with confidence</p>
+                      <span className="font-medium">30-Day Returns</span>
+                      <p className="text-sm text-muted-foreground">Hassle-free returns within 30 days</p>
                     </div>
                   </li>
                 </ul>
@@ -385,72 +441,115 @@ export default function ProductPage({ params }: { params: { id: string } }) {
 
           <TabsContent value="reviews" className="pt-6">
             <div className="space-y-8">
-              <div className="flex flex-col md:flex-row gap-8">
-                <div className="md:w-1/3">
-                  <div className="text-center md:text-left">
-                    <div className="text-5xl font-bold">{product.rating.toFixed(1)}</div>
-                    <div className="flex justify-center md:justify-start mt-2">
-                      {Array.from({ length: 5 }).map((_, i) => (
-                        <Star
-                          key={i}
-                          className={cn(
-                            "h-5 w-5",
-                            i < Math.floor(product.rating) ? "text-primary fill-primary" : "text-muted-foreground",
-                          )}
-                        />
-                      ))}
-                    </div>
-                    <div className="text-sm text-muted-foreground mt-1">Based on {product.reviews} reviews</div>
-
-                    <Button className="mt-4">Write a Review</Button>
-                  </div>
-                </div>
-
-                <div className="md:w-2/3">
-                  <div className="space-y-6">
-                    {/* Mock reviews */}
-                    {Array.from({ length: 3 }).map((_, i) => (
-                      <div key={i} className="border-b pb-6">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h4 className="font-medium">John Doe</h4>
-                            <div className="flex items-center mt-1">
-                              {Array.from({ length: 5 }).map((_, j) => (
-                                <Star
-                                  key={j}
-                                  className={cn(
-                                    "h-4 w-4",
-                                    j < 4 + (i % 2) ? "text-primary fill-primary" : "text-muted-foreground",
-                                  )}
-                                />
-                              ))}
-                              <span className="text-xs text-muted-foreground ml-2">
-                                {new Date(2023, 5 + i, 10).toLocaleDateString()}
-                              </span>
-                            </div>
-                          </div>
-                          <Badge variant="outline">Verified Purchase</Badge>
-                        </div>
-
-                        <h5 className="font-medium mt-3">Excellent quality and design</h5>
-                        <p className="text-muted-foreground mt-2">
-                          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed euismod, nisl vel ultricies
-                          lacinia, nisl nisl aliquam nisl, eget aliquam nisl nisl sit amet nisl.
-                        </p>
-
-                        <div className="flex items-center gap-2 mt-3">
-                          <Button variant="ghost" size="sm" className="h-8">
-                            Helpful (12)
-                          </Button>
-                          <Button variant="ghost" size="sm" className="h-8">
-                            Report
-                          </Button>
-                        </div>
-                      </div>
+              <div className="flex items-center gap-4">
+                <div className="text-4xl font-bold">{product.rating}</div>
+                <div>
+                  <div className="flex items-center">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star
+                        key={i}
+                        className={cn(
+                          "h-5 w-5",
+                          i < Math.floor(product.rating) ? "text-primary fill-primary" : "text-muted-foreground",
+                        )}
+                      />
                     ))}
                   </div>
+                  <p className="text-sm text-muted-foreground">Based on {product.reviews} reviews</p>
                 </div>
               </div>
+
+              <div className="space-y-6">
+                {mockReviews.map((review) => (
+                  <div key={review.id} className="border-b pb-6 last:border-0">
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <h4 className="font-medium">{review.userName}</h4>
+                        <div className="flex items-center gap-2">
+                          <div className="flex">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                              <Star
+                                key={i}
+                                className={cn(
+                                  "h-4 w-4",
+                                  i < review.rating ? "text-primary fill-primary" : "text-muted-foreground",
+                                )}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-sm text-muted-foreground">{review.date}</span>
+                        </div>
+                      </div>
+                      <Button variant="ghost" size="sm">
+                        Helpful ({review.helpful})
+                      </Button>
+                    </div>
+                    <h5 className="font-medium mb-2">{review.title}</h5>
+                    <p className="text-muted-foreground">{review.comment}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="related" className="pt-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {relatedProducts.map((relatedProduct) => (
+                <Link
+                  key={relatedProduct.id}
+                  href={`/products/${relatedProduct.id}`}
+                  className="group block"
+                >
+                  <div className="relative aspect-square overflow-hidden rounded-lg border">
+                    <Image
+                      src={relatedProduct.images[0] || "/placeholder.svg"}
+                      alt={relatedProduct.name}
+                      fill
+                      className="object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                    {relatedProduct.sale && (
+                      <Badge variant="destructive" className="absolute top-2 left-2">
+                        Sale {relatedProduct.discount}%
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="mt-2">
+                    <h3 className="font-medium group-hover:text-primary transition-colors">
+                      {relatedProduct.name}
+                    </h3>
+                    <div className="flex items-center gap-2 mt-1">
+                      <div className="flex">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <Star
+                            key={i}
+                            className={cn(
+                              "h-4 w-4",
+                              i < Math.floor(relatedProduct.rating)
+                                ? "text-primary fill-primary"
+                                : "text-muted-foreground",
+                            )}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-sm text-muted-foreground">({relatedProduct.reviews})</span>
+                    </div>
+                    <div className="mt-1">
+                      {relatedProduct.sale ? (
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-destructive">
+                            ${((relatedProduct.price * (100 - relatedProduct.discount!)) / 100).toFixed(2)}
+                          </span>
+                          <span className="text-sm text-muted-foreground line-through">
+                            ${relatedProduct.price.toFixed(2)}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="font-medium">${relatedProduct.price.toFixed(2)}</span>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              ))}
             </div>
           </TabsContent>
         </Tabs>

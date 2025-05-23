@@ -1,8 +1,7 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
@@ -10,13 +9,57 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Progress } from "@/components/ui/progress"
 import { useAuth } from "@/components/auth-provider"
 import { Github } from "lucide-react"
+
+// Password strength checker
+const checkPasswordStrength = (password: string) => {
+  let strength = 0
+  const feedback = []
+
+  if (password.length >= 8) {
+    strength += 1
+  } else {
+    feedback.push("Password should be at least 8 characters long")
+  }
+
+  if (/[A-Z]/.test(password)) {
+    strength += 1
+  } else {
+    feedback.push("Include at least one uppercase letter")
+  }
+
+  if (/[a-z]/.test(password)) {
+    strength += 1
+  } else {
+    feedback.push("Include at least one lowercase letter")
+  }
+
+  if (/[0-9]/.test(password)) {
+    strength += 1
+  } else {
+    feedback.push("Include at least one number")
+  }
+
+  if (/[^A-Za-z0-9]/.test(password)) {
+    strength += 1
+  } else {
+    feedback.push("Include at least one special character")
+  }
+
+  return {
+    strength: (strength / 5) * 100,
+    feedback: feedback.length > 0 ? feedback : ["Strong password!"],
+  }
+}
 
 export default function LoginPage() {
   const router = useRouter()
   const { login, register } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
+  const [rememberMe, setRememberMe] = useState(false)
 
   const [loginData, setLoginData] = useState({
     email: "",
@@ -35,6 +78,27 @@ export default function LoginPage() {
     register: "",
   })
 
+  const [passwordStrength, setPasswordStrength] = useState({
+    strength: 0,
+    feedback: [],
+  })
+
+  // Load remembered email if exists
+  useEffect(() => {
+    const rememberedEmail = localStorage.getItem("rememberedEmail")
+    if (rememberedEmail) {
+      setLoginData(prev => ({ ...prev, email: rememberedEmail }))
+      setRememberMe(true)
+    }
+  }, [])
+
+  // Check password strength on change
+  useEffect(() => {
+    if (registerData.password) {
+      setPasswordStrength(checkPasswordStrength(registerData.password))
+    }
+  }, [registerData.password])
+
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrors({ ...errors, login: "" })
@@ -48,6 +112,11 @@ export default function LoginPage() {
 
     try {
       await login(loginData.email, loginData.password)
+      if (rememberMe) {
+        localStorage.setItem("rememberedEmail", loginData.email)
+      } else {
+        localStorage.removeItem("rememberedEmail")
+      }
       router.push("/")
     } catch (error) {
       setErrors({ ...errors, login: "Invalid email or password" })
@@ -67,6 +136,11 @@ export default function LoginPage() {
 
     if (registerData.password !== registerData.confirmPassword) {
       setErrors({ ...errors, register: "Passwords do not match" })
+      return
+    }
+
+    if (passwordStrength.strength < 60) {
+      setErrors({ ...errors, register: "Please choose a stronger password" })
       return
     }
 
@@ -112,13 +186,20 @@ export default function LoginPage() {
                     placeholder="Enter your email"
                     value={loginData.email}
                     onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
+                    aria-required="true"
+                    aria-invalid={!!errors.login}
+                    aria-describedby={errors.login ? "login-error" : undefined}
                   />
                 </div>
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="password">Password</Label>
-                    <Link href="/forgot-password" className="text-xs text-muted-foreground hover:text-primary">
+                    <Link 
+                      href="/forgot-password" 
+                      className="text-xs text-muted-foreground hover:text-primary"
+                      aria-label="Forgot your password?"
+                    >
                       Forgot password?
                     </Link>
                   </div>
@@ -128,10 +209,31 @@ export default function LoginPage() {
                     placeholder="Enter your password"
                     value={loginData.password}
                     onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                    aria-required="true"
+                    aria-invalid={!!errors.login}
+                    aria-describedby={errors.login ? "login-error" : undefined}
                   />
                 </div>
 
-                {errors.login && <p className="text-sm text-destructive">{errors.login}</p>}
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="remember"
+                    checked={rememberMe}
+                    onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                  />
+                  <Label
+                    htmlFor="remember"
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                  >
+                    Remember me
+                  </Label>
+                </div>
+
+                {errors.login && (
+                  <p className="text-sm text-destructive" id="login-error" role="alert">
+                    {errors.login}
+                  </p>
+                )}
 
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
@@ -171,6 +273,9 @@ export default function LoginPage() {
                     placeholder="Enter your full name"
                     value={registerData.name}
                     onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })}
+                    aria-required="true"
+                    aria-invalid={!!errors.register}
+                    aria-describedby={errors.register ? "register-error" : undefined}
                   />
                 </div>
 
@@ -182,6 +287,9 @@ export default function LoginPage() {
                     placeholder="Enter your email"
                     value={registerData.email}
                     onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
+                    aria-required="true"
+                    aria-invalid={!!errors.register}
+                    aria-describedby={errors.register ? "register-error" : undefined}
                   />
                 </div>
 
@@ -193,7 +301,20 @@ export default function LoginPage() {
                     placeholder="Create a password"
                     value={registerData.password}
                     onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
+                    aria-required="true"
+                    aria-invalid={!!errors.register}
+                    aria-describedby={errors.register ? "register-error" : undefined}
                   />
+                  {registerData.password && (
+                    <div className="space-y-2">
+                      <Progress value={passwordStrength.strength} className="h-2" />
+                      <ul className="text-xs text-muted-foreground space-y-1">
+                        {passwordStrength.feedback.map((feedback, index) => (
+                          <li key={index}>{feedback}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -204,10 +325,17 @@ export default function LoginPage() {
                     placeholder="Confirm your password"
                     value={registerData.confirmPassword}
                     onChange={(e) => setRegisterData({ ...registerData, confirmPassword: e.target.value })}
+                    aria-required="true"
+                    aria-invalid={!!errors.register}
+                    aria-describedby={errors.register ? "register-error" : undefined}
                   />
                 </div>
 
-                {errors.register && <p className="text-sm text-destructive">{errors.register}</p>}
+                {errors.register && (
+                  <p className="text-sm text-destructive" id="register-error" role="alert">
+                    {errors.register}
+                  </p>
+                )}
 
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
