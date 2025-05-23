@@ -13,6 +13,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
 import { useAuth } from "@/components/auth-provider"
 import { Github } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { SignInButton } from "@/components/auth-provider"
 
 // Password strength checker
 const checkPasswordStrength = (password: string) => {
@@ -57,7 +59,7 @@ const checkPasswordStrength = (password: string) => {
 
 export default function LoginPage() {
   const router = useRouter()
-  const { login, register } = useAuth()
+  const { login, register, signIn } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
 
@@ -156,6 +158,24 @@ export default function LoginPage() {
     }
   }
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    try {
+      await signIn(loginData.email, loginData.password)
+      router.push("/")
+    } catch (error) {
+      console.error(error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setLoginData((prev) => ({ ...prev, [name]: value }))
+  }
+
   return (
     <div className="container mx-auto px-4 py-24 md:py-32">
       <motion.div
@@ -169,203 +189,60 @@ export default function LoginPage() {
           <p className="text-muted-foreground mt-2">Sign in to your account or create a new one</p>
         </div>
 
-        <div className="bg-background border rounded-xl p-6 md:p-8 shadow-sm">
-          <Tabs defaultValue="login">
-            <TabsList className="grid grid-cols-2 mb-6">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="register">Register</TabsTrigger>
-            </TabsList>
+        <Card className="mx-auto max-w-md">
+          <CardHeader>
+            <CardTitle>Login</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={loginData.email}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
 
-            <TabsContent value="login">
-              <form onSubmit={handleLoginSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={loginData.email}
-                    onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
-                    aria-required="true"
-                    aria-invalid={!!errors.login}
-                    aria-describedby={errors.login ? "login-error" : undefined}
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  value={loginData.password}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="password">Password</Label>
-                    <Link 
-                      href="/forgot-password" 
-                      className="text-xs text-muted-foreground hover:text-primary"
-                      aria-label="Forgot your password?"
-                    >
-                      Forgot password?
-                    </Link>
-                  </div>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Enter your password"
-                    value={loginData.password}
-                    onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                    aria-required="true"
-                    aria-invalid={!!errors.login}
-                    aria-describedby={errors.login ? "login-error" : undefined}
-                  />
-                </div>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? "Logging in..." : "Login"}
+              </Button>
+            </form>
 
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="remember"
-                    checked={rememberMe}
-                    onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                  />
-                  <Label
-                    htmlFor="remember"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    Remember me
-                  </Label>
-                </div>
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+              </div>
+            </div>
 
-                {errors.login && (
-                  <p className="text-sm text-destructive" id="login-error" role="alert">
-                    {errors.login}
-                  </p>
-                )}
+            <SignInButton />
 
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <Button variant="outline" type="button" className="w-full">
-                    <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
-                      <path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path>
-                    </svg>
-                    Google
-                  </Button>
-                  <Button variant="outline" type="button" className="w-full">
-                    <Github className="mr-2 h-4 w-4" />
-                    Github
-                  </Button>
-                </div>
-
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Signing in..." : "Sign in"}
-                </Button>
-              </form>
-            </TabsContent>
-
-            <TabsContent value="register">
-              <form onSubmit={handleRegisterSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input
-                    id="name"
-                    type="text"
-                    placeholder="Enter your full name"
-                    value={registerData.name}
-                    onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })}
-                    aria-required="true"
-                    aria-invalid={!!errors.register}
-                    aria-describedby={errors.register ? "register-error" : undefined}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="register-email">Email</Label>
-                  <Input
-                    id="register-email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={registerData.email}
-                    onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
-                    aria-required="true"
-                    aria-invalid={!!errors.register}
-                    aria-describedby={errors.register ? "register-error" : undefined}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="register-password">Password</Label>
-                  <Input
-                    id="register-password"
-                    type="password"
-                    placeholder="Create a password"
-                    value={registerData.password}
-                    onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
-                    aria-required="true"
-                    aria-invalid={!!errors.register}
-                    aria-describedby={errors.register ? "register-error" : undefined}
-                  />
-                  {registerData.password && (
-                    <div className="space-y-2">
-                      <Progress value={passwordStrength.strength} className="h-2" />
-                      <ul className="text-xs text-muted-foreground space-y-1">
-                        {passwordStrength.feedback.map((feedback, index) => (
-                          <li key={index}>{feedback}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="confirm-password">Confirm Password</Label>
-                  <Input
-                    id="confirm-password"
-                    type="password"
-                    placeholder="Confirm your password"
-                    value={registerData.confirmPassword}
-                    onChange={(e) => setRegisterData({ ...registerData, confirmPassword: e.target.value })}
-                    aria-required="true"
-                    aria-invalid={!!errors.register}
-                    aria-describedby={errors.register ? "register-error" : undefined}
-                  />
-                </div>
-
-                {errors.register && (
-                  <p className="text-sm text-destructive" id="register-error" role="alert">
-                    {errors.register}
-                  </p>
-                )}
-
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <Button variant="outline" type="button" className="w-full">
-                    <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
-                      <path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path>
-                    </svg>
-                    Google
-                  </Button>
-                  <Button variant="outline" type="button" className="w-full">
-                    <Github className="mr-2 h-4 w-4" />
-                    Github
-                  </Button>
-                </div>
-
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? "Creating account..." : "Create account"}
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
-        </div>
+            <p className="mt-4 text-center text-sm text-muted-foreground">
+              Don't have an account?{" "}
+              <Link href="/register" className="text-primary hover:underline">
+                Register
+              </Link>
+            </p>
+          </CardContent>
+        </Card>
       </motion.div>
     </div>
   )
