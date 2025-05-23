@@ -12,5 +12,14 @@ export async function GET(request: Request) {
   }
 
   // URL to redirect to after sign in process completes
-  return NextResponse.redirect(new URL("/", requestUrl.origin))
+  const redirectUrl = new URL("/", requestUrl.origin)
+  
+  // Add any query parameters from the original request
+  requestUrl.searchParams.forEach((value, key) => {
+    if (key !== "code") {
+      redirectUrl.searchParams.set(key, value)
+    }
+  })
+
+  return NextResponse.redirect(redirectUrl)
 } 
