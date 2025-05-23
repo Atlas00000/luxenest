@@ -1,5 +1,4 @@
 import type React from "react"
-import { Inter } from "next/font/google"
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/components/auth-provider"
@@ -7,13 +6,14 @@ import Header from "@/components/header"
 import Footer from "@/components/footer"
 import "./globals.css"
 import { CartProvider } from "@/lib/cart"
-
-const inter = Inter({ subsets: ["latin"] })
+import { WishlistProvider } from "@/lib/wishlist"
+import { cn } from "@/lib/utils"
+import { fontSans } from "@/lib/fonts"
 
 export const metadata = {
   title: "LuxeNest | Premium Home Decor",
   description: "Discover premium home decor and furniture at LuxeNest",
-    generator: 'v0.dev'
+  generator: 'v0.dev'
 }
 
 export default function RootLayout({
@@ -23,19 +23,19 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
-        <ThemeProvider defaultTheme="system" storageKey="luxenest-theme">
+      <body className={cn("min-h-screen bg-background font-sans antialiased", fontSans.variable)}>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <AuthProvider>
             <CartProvider>
-              <div className="flex min-h-screen flex-col">
+              <WishlistProvider>
                 <Header />
                 <main className="flex-1">{children}</main>
                 <Footer />
-              </div>
-              <Toaster />
+              </WishlistProvider>
             </CartProvider>
           </AuthProvider>
         </ThemeProvider>
+        <Toaster />
       </body>
     </html>
   )

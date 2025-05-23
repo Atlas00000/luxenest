@@ -49,7 +49,7 @@ export default function Header() {
     { name: "Shop", href: "/products" },
     { name: "Categories", href: "/categories" },
     { name: "New Arrivals", href: "/new-arrivals" },
-    { name: "Sale", href: "/sale" },
+    { name: "Sale", href: "/sales" },
   ]
 
   return (
