@@ -18,7 +18,7 @@ import { Progress } from "@/components/ui/progress"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-// Mock shipping rates - replace with actual API call
+// Local shipping rates
 const shippingRates = {
   standard: {
     name: "Standard Shipping",
@@ -40,7 +40,7 @@ const shippingRates = {
   },
 }
 
-// Mock payment methods - replace with actual payment integration
+// Local payment methods
 const paymentMethods = [
   {
     id: "credit-card",
@@ -80,13 +80,12 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState("credit-card")
   const [shippingMethod, setShippingMethod] = useState("standard")
   const [zipCode, setZipCode] = useState("")
-  const [isCalculatingShipping, setIsCalculatingShipping] = useState(false)
 
   const shipping = shippingRates[shippingMethod as keyof typeof shippingRates].price
   const tax = subtotal * 0.08
   const total = subtotal + shipping + tax
 
-  const handleCalculateShipping = async () => {
+  const handleCalculateShipping = () => {
     if (!zipCode) {
       toast({
         title: "Zip code required",
@@ -96,21 +95,23 @@ export default function CheckoutPage() {
       return
     }
 
-    setIsCalculatingShipping(true)
+    // Simple validation for zip code
+    if (!/^\d{5}(-\d{4})?$/.test(zipCode)) {
+      toast({
+        title: "Invalid zip code",
+        description: "Please enter a valid US zip code.",
+        variant: "destructive",
+      })
+      return
+    }
 
-    // Mock API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    // Mock successful calculation
     toast({
       title: "Shipping calculated",
       description: "Shipping rates have been updated based on your location.",
     })
-
-    setIsCalculatingShipping(false)
   }
 
-  const handleSubmitOrder = async (e: React.FormEvent) => {
+  const handleSubmitOrder = (e: React.FormEvent) => {
     e.preventDefault()
 
     if (items.length === 0) {
@@ -124,18 +125,17 @@ export default function CheckoutPage() {
 
     setIsProcessing(true)
 
-    // Mock API call
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    // Simulate order processing
+    setTimeout(() => {
+      toast({
+        title: "Order placed successfully!",
+        description: "Thank you for your purchase.",
+      })
 
-    toast({
-      title: "Order placed successfully!",
-      description: "Thank you for your purchase.",
-    })
-
-    clearCart()
-    router.push("/checkout/success")
-
-    setIsProcessing(false)
+      clearCart()
+      router.push("/checkout/success")
+      setIsProcessing(false)
+    }, 1000)
   }
 
   return (
@@ -204,7 +204,6 @@ export default function CheckoutPage() {
                     type="button"
                     variant="outline"
                     onClick={handleCalculateShipping}
-                    disabled={isCalculatingShipping || !zipCode}
                     className="self-end"
                   >
                     Calculate
