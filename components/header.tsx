@@ -148,46 +148,6 @@ export default function Header() {
 
               <AnimatePresence>{isCartPreviewOpen && items.length > 0 && <CartPreview />}</AnimatePresence>
             </div>
-
-            {user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" aria-label="User menu" className="relative overflow-hidden">
-                    <User className="h-5 w-5" />
-                    <motion.div
-                      className="absolute inset-0 bg-primary/10 rounded-full"
-                      initial={{ scale: 0 }}
-                      whileHover={{ scale: 1 }}
-                      transition={{ duration: 0.3 }}
-                    />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="theme-transition">
-                  <DropdownMenuItem className="font-medium">{user.name}</DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/account">My Account</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/orders">Orders</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={logout}>Logout</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <Link href="/login">
-                <Button variant="ghost" size="sm" className="relative overflow-hidden">
-                  <span className="relative z-10">Login</span>
-                  <motion.div
-                    className="absolute inset-0 bg-primary/10 rounded-md"
-                    initial={{ scale: 0 }}
-                    whileHover={{ scale: 1 }}
-                    transition={{ duration: 0.3 }}
-                  />
-                </Button>
-              </Link>
-            )}
           </div>
 
           {/* Mobile Menu Button */}
